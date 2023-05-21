@@ -18,8 +18,17 @@ const messages = ref<Message[]>([]);
 
 const usersTyping = ref<User[]>([]);
 
-// send messages to Chat API here
-// and in the empty function below
+// for context
+const messagesForApi = computed(
+	() =>
+		messages.value
+			.map((m) => ({
+				role: m.userId,
+				content: m.text,
+			}))
+			.slice(-50) // limit for number of messages (all messages tex limit 4k for 3.5, 8r for 4)
+									// if limit over response return - finish_reason: "length"
+);
 
 async function handleNewMessage(message: Message) {
 	messages.value.push(message);
@@ -27,7 +36,7 @@ async function handleNewMessage(message: Message) {
 	const res = await $fetch("/api/ai", {
 		method: "POST",
 		body: {
-			messages: [{ role: "user", content: message.text }],
+			messages: messagesForApi.value,
 		},
 	});
 	if (!res.choices[0].message?.content) return;
